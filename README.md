@@ -2,6 +2,10 @@
 
 <img src="docs/assets/logo_airplay_esp32.png" alt="AirPlay ESP32" width="400">
 
+# Fork from main project, adding maximum volume control for active speaker setups relying on Airplay for volume adjustment
+
+---
+
 # ESP32 AirPlay 2 Receiver
 
 **Stream music from your Apple devices — or from any phone over Bluetooth — to any speaker for about $10**
