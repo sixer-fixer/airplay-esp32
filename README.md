@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/assets/logo_airplay_esp32.png" alt="AirPlay ESP32" width="400">
-
 # Fork from main project, adding maximum volume control for active speaker setups relying on Airplay for volume adjustment
 
 ---
+
+<img src="docs/assets/logo_airplay_esp32.png" alt="AirPlay ESP32" width="400">
 
 # ESP32 AirPlay 2 Receiver
 
