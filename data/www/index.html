@@ -67,6 +67,16 @@ input:focus{outline:none;border-color:#e94560}
 <span id='led-pct'>50%</span></div></div>
 <button class='btn btn-secondary' onclick='saveBrightness()'>Save Brightness</button>
 <div id='brightness-msg'></div>
+<div class='form-group' style='margin-top:18px'>
+<label for='max-volume'>Max Volume</label>
+<div class='slider-row'>
+<input type='range' id='max-volume' min='0' max='100' value='100'
+       oninput='document.getElementById("max-volume-pct").textContent=this.value+"%"'>
+<span id='max-volume-pct'>100%</span>
+</div>
+</div>
+<button class='btn btn-secondary' onclick='saveMaxVolume()'>Save Max Volume</button>
+<div id='max-volume-msg'></div>
 <div id='chan-group'>
 <div class='form-group' style='margin-top:18px'><label for='chan-mode' id='chan-label'>Output Channel</label>
 <select id='chan-mode' onchange='saveChannel()'>
@@ -139,6 +149,16 @@ async function loadBrightness(){
     if(d.success){var s=document.getElementById('led-brightness');s.value=d.brightness;
       document.getElementById('led-pct').textContent=Math.round(d.brightness/255*100)+'%';}}
   catch(e){console.warn('Could not load LED brightness',e);}}
+async function loadMaxVolume(){
+  try{var r=await fetch('/api/audio/max-volume');var d=await r.json();
+    if(d.success){var s=document.getElementById('max-volume');s.value=d.max_volume;
+      document.getElementById('max-volume-pct').textContent=d.max_volume+'%';}}
+  catch(e){console.warn('Could not load maximum volume',e);}}
+async function saveMaxVolume(){
+  var v=Number.parseInt(document.getElementById('max-volume').value,10);
+  try{var r=await fetch('/api/audio/max-volume',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_volume:v})});
+    var d=await r.json();if(d.success){msg('max-volume-msg','Saved!','ok');}else{msg('max-volume-msg',d.error,'err');}}
+  catch(e){msg('max-volume-msg','Error','err');console.error('saveMaxVolume failed',e);}}
 async function saveBrightness(){
   var v=Number.parseInt(document.getElementById('led-brightness').value,10);
   try{var r=await fetch('/api/led/brightness',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brightness:v})});
@@ -249,5 +269,5 @@ window.onload=function(){
   document.getElementById('fw-file').onchange=function(e){var f=e.target.files[0];
     document.getElementById('fw-name').textContent=f?f.name:'No file selected';
     document.getElementById('ota-btn').disabled=!f;};
-  loadInfo();loadBrightness();loadChannel();setInterval(loadInfo,30000);};
+  loadInfo();loadBrightness();loadMaxVolume();loadChannel();setInterval(loadInfo,30000);};
 </script></body></html>

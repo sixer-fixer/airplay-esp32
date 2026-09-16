@@ -130,6 +130,18 @@ esp_err_t settings_get_led_brightness(uint8_t *brightness);
  */
 esp_err_t settings_set_led_brightness(uint8_t brightness);
 
+// ---- Maximum volume ----
+
+/**
+ * Get saved maximum AirPlay output volume (1–100 percent).
+ */
+esp_err_t settings_get_max_volume(uint8_t *volume);
+
+/**
+ * Save maximum AirPlay output volume (1–100 percent) to persistent storage.
+ */
+esp_err_t settings_set_max_volume(uint8_t volume);
+
 // ---- EQ settings ----
 
 /** Number of EQ bands stored in NVS */

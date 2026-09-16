@@ -19,6 +19,7 @@ static const char *TAG = "settings";
 #define NVS_KEY_DEVICE_NAME    "device_name"
 #define NVS_KEY_EQ_GAINS       "eq_gains"
 #define NVS_KEY_LED_BRIGHTNESS "led_bright"
+#define NVS_KEY_MAX_VOLUME     "max_vol"
 #define NVS_KEY_CHANNEL_MODE   "chan_mode"
 #define NVS_KEY_SUB_OFFSET     "sub_off"
 #define NVS_KEY_SUB_XOVER      "sub_xo"
@@ -35,6 +36,9 @@ static const char *TAG = "settings";
 // Cached values  (defaults = 50 %)
 static float g_volume_db = -15.0f;
 static bool g_volume_loaded = false;
+
+static uint8_t g_max_volume = 100;
+static bool g_max_volume_loaded = false;
 
 #ifdef CONFIG_BT_A2DP_ENABLE
 static uint8_t g_bt_volume = 64; /* default: 50 % */
@@ -392,6 +396,65 @@ esp_err_t settings_set_led_brightness(uint8_t brightness) {
   } else {
     ESP_LOGE(TAG, "Failed to save LED brightness: %s", esp_err_to_name(err));
   }
+  return err;
+}
+
+/* ================================================================== */
+/*  Maximum Volume                                                     */
+/* ================================================================== */
+
+esp_err_t settings_get_max_volume(uint8_t *volume) {
+  if (!volume) {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  if (!g_max_volume_loaded) {
+    nvs_handle_t nvs;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs);
+    if (err == ESP_OK) {
+      uint8_t saved;
+      err = nvs_get_u8(nvs, NVS_KEY_MAX_VOLUME, &saved);
+      nvs_close(nvs);
+
+      if (err == ESP_OK && saved <= 100) {
+        g_max_volume = saved;
+      }
+    }
+
+    // If no saved value exists, retain the 100% default.
+    g_max_volume_loaded = true;
+  }
+
+  *volume = g_max_volume;
+  return ESP_OK;
+}
+
+esp_err_t settings_set_max_volume(uint8_t volume) {
+  if (volume > 100) {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  nvs_handle_t nvs;
+  esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to open NVS: %s", esp_err_to_name(err));
+    return err;
+  }
+
+  err = nvs_set_u8(nvs, NVS_KEY_MAX_VOLUME, volume);
+  if (err == ESP_OK) {
+    err = nvs_commit(nvs);
+  }
+  nvs_close(nvs);
+
+  if (err == ESP_OK) {
+    g_max_volume = volume;
+    g_max_volume_loaded = true;
+    ESP_LOGI(TAG, "Saved maximum volume: %d%%", volume);
+  } else {
+    ESP_LOGE(TAG, "Failed to save maximum volume: %s", esp_err_to_name(err));
+  }
+
   return err;
 }
 

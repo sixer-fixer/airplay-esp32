@@ -153,6 +153,12 @@ static void apply_volume(int16_t *buf, size_t n) {
   // with a minimum step of 1 so the ramp always completes.
   static int32_t cur_q15 = -1;
   int32_t target = airplay_get_volume_q15();
+
+  // Apply user-configured maximum volume (default 100%)
+  uint8_t max_volume = 100;
+  settings_get_max_volume(&max_volume);
+  target = (target * max_volume) / 100;
+
   if (cur_q15 < 0) {
     cur_q15 = target; // first call: no audio has played yet, jump silently
   }

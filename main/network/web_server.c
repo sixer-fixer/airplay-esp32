@@ -486,6 +486,71 @@ static esp_err_t channel_mode_post_handler(httpd_req_t *req) {
   return ESP_OK;
 }
 
+/* ================================================================== */
+/*  Maximum Volume API                                                 */
+/* ================================================================== */
+
+static esp_err_t max_volume_get_handler(httpd_req_t *req) {
+  uint8_t volume = 100;
+  settings_get_max_volume(&volume);
+
+  cJSON *json = cJSON_CreateObject();
+  cJSON_AddNumberToObject(json, "max_volume", volume);
+  cJSON_AddBoolToObject(json, "success", true);
+
+  char *json_str = cJSON_Print(json);
+  httpd_resp_set_type(req, "application/json");
+  httpd_resp_send(req, json_str, HTTPD_RESP_USE_STRLEN);
+  free(json_str);
+  cJSON_Delete(json);
+
+  return ESP_OK;
+}
+
+static esp_err_t max_volume_post_handler(httpd_req_t *req) {
+  char *content = recv_body(req, 128);
+  if (!content) {
+    httpd_resp_send_500(req);
+    return ESP_FAIL;
+  }
+
+  cJSON *json = cJSON_Parse(content);
+  free(content);
+
+  if (!json) {
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+    return ESP_FAIL;
+  }
+
+  cJSON *response = cJSON_CreateObject();
+  cJSON *val = cJSON_GetObjectItem(json, "max_volume");
+
+  if (json_int_in_range(val, 0, 100)) {
+    esp_err_t err = settings_set_max_volume((uint8_t)val->valueint);
+
+    if (err == ESP_OK) {
+      cJSON_AddBoolToObject(response, "success", true);
+      cJSON_AddNumberToObject(response, "max_volume", val->valueint);
+    } else {
+      cJSON_AddBoolToObject(response, "success", false);
+      cJSON_AddStringToObject(response, "error", esp_err_to_name(err));
+    }
+  } else {
+    cJSON_AddBoolToObject(response, "success", false);
+    cJSON_AddStringToObject(response, "error",
+                            "Expected {\"max_volume\": 0-100}");
+  }
+
+  char *json_str = cJSON_Print(response);
+  httpd_resp_set_type(req, "application/json");
+  httpd_resp_send(req, json_str, HTTPD_RESP_USE_STRLEN);
+  free(json_str);
+  cJSON_Delete(json);
+  cJSON_Delete(response);
+
+  return ESP_OK;
+}
+
 #ifdef DAC_HAS_SUB_OFFSET
 #ifdef CONFIG_DAC_TAS58XX
 /* The NVS blob layout and the driver's band count are declared independently,
@@ -1307,7 +1372,7 @@ esp_err_t web_server_start(uint16_t port) {
 #endif
   config.lru_purge_enable = true; // Reclaim stale sockets when all are in use
   config.max_uri_handlers =
-      30; // Room for captive portal + EQ + speedtest + brightness + channel
+      32; // Room for captive portal + EQ + speedtest + brightness + channel
 #ifdef DAC_HAS_SUB_OFFSET
   config.max_uri_handlers += 2; // sub level get/post
 #endif
@@ -1387,6 +1452,16 @@ esp_err_t web_server_start(uint16_t port) {
                                       .method = HTTP_GET,
                                       .handler = channel_mode_get_handler};
   httpd_register_uri_handler(s_server, &channel_mode_get_uri);
+
+  httpd_uri_t max_volume_get_uri = {.uri = "/api/audio/max-volume",
+                                    .method = HTTP_GET,
+                                    .handler = max_volume_get_handler};
+  httpd_register_uri_handler(s_server, &max_volume_get_uri);
+
+  httpd_uri_t max_volume_post_uri = {.uri = "/api/audio/max-volume",
+                                     .method = HTTP_POST,
+                                     .handler = max_volume_post_handler};
+  httpd_register_uri_handler(s_server, &max_volume_post_uri);
 
   httpd_uri_t channel_mode_post_uri = {.uri = "/api/audio/channel",
                                        .method = HTTP_POST,
